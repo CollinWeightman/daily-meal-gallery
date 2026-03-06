@@ -49,8 +49,9 @@ class CloudinaryService
      */
     public function getUrl(string $publicId, array $transforms = []): string
     {
-        return Cloudinary::getUrl($publicId, $transforms);
+        return (string) app(\Cloudinary\Cloudinary::class)->image($publicId)->toUrl();
     }
+    
 
     /**
      * 取得縮圖 URL
@@ -60,10 +61,9 @@ class CloudinaryService
      */
     public function getThumbnailUrl(string $publicId): string
     {
-        return $this->getUrl($publicId, [
-            'crop' => 'fill',
-            'width' => 300,
-            'height' => 300,
-        ]);
+        return (string) app(\Cloudinary\Cloudinary::class)
+            ->image($publicId)
+            ->resize(\Cloudinary\Transformation\Resize::fill(300, 300))
+            ->toUrl();
     }
 }
