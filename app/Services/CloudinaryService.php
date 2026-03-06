@@ -15,17 +15,19 @@ class CloudinaryService
      */
     public function upload(UploadedFile $file): string
     {
-        $result = Cloudinary::upload($file->getRealPath(), [
-            'folder' => 'daily-meals',
-            'transformation' => [
-                'width' => 800,
-                'crop' => 'limit',
-                'fetch_format' => 'auto',
-                'quality' => 'auto',
-            ],
-        ]);
-
-        return $result->getPublicId();
+        $result = app(\Cloudinary\Cloudinary::class)
+            ->uploadApi()
+            ->upload($file->getRealPath(), [
+                'folder' => 'daily-meals',
+                'transformation' => [
+                    'width' => 800,
+                    'crop' => 'limit',
+                    'fetch_format' => 'auto',
+                    'quality' => 'auto',
+                ],
+            ]);
+    
+        return $result['public_id'];
     }
 
     /**
@@ -36,7 +38,10 @@ class CloudinaryService
      */
     public function delete(string $publicId): bool
     {
-        $result = Cloudinary::destroy($publicId);
+        $result = app(\Cloudinary\Cloudinary::class)
+            ->uploadApi()
+            ->destroy($publicId);
+    
         return $result['result'] === 'ok';
     }
 

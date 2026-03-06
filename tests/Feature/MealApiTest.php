@@ -34,3 +34,23 @@ test('can get single meal', function () {
     $response->assertStatus(200)
              ->assertJsonPath('data.meal_type_label', 'breakfast');
 });
+
+test('can store a meal', function () {
+    $this->mock(\App\Services\CloudinaryService::class)
+    ->shouldReceive('upload')
+    ->once()
+    ->andReturn('daily-meals/test123')
+    ->shouldReceive('getUrl')
+    ->andReturn('https://res.cloudinary.com/fake/image/upload/daily-meals/test123')
+    ->shouldReceive('getThumbnailUrl')
+    ->andReturn('https://res.cloudinary.com/fake/image/upload/c_fill,h_300,w_300/daily-meals/test123');
+
+    $response = $this->postJson('/api/meals', [
+        'photo' => \Illuminate\Http\UploadedFile::fake()->image('food.jpg'),
+        'meal_type' => 2,
+        'remark' => 'Test meal',
+    ]);
+
+    $response->assertStatus(201)
+             ->assertJsonPath('data.meal_type_label', 'lunch');
+});

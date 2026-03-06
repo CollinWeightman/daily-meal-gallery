@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Resources\MealResource;
 use App\Models\Meal;
+use App\Http\Requests\StoreMealRequest;
+use App\Services\CloudinaryService;
 
 class MealController extends Controller
 {
@@ -40,9 +42,18 @@ class MealController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreMealRequest $request, CloudinaryService $cloudinary)
     {
-        //
+        $publicId = $cloudinary->upload($request->file('photo'));
+    
+        $meal = Meal::create([
+            'cloudinary_public_id' => $publicId,
+            'meal_type' => $request->meal_type,
+            'remark' => $request->remark,
+            'taken_at' => $request->taken_at ?? now(),
+        ]);
+    
+        return (new MealResource($meal))->response()->setStatusCode(201);
     }
 
     /**
