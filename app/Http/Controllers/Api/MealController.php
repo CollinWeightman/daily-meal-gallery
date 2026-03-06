@@ -76,8 +76,10 @@ class MealController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Meal $meal)
+    public function destroy(Meal $meal, CloudinaryService $cloudinary)
     {
-        //
+        $cloudinary->delete($meal->cloudinary_public_id);
+        $meal->delete();
+        return response()->noContent();
     }
 }

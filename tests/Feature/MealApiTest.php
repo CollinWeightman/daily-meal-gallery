@@ -54,3 +54,17 @@ test('can store a meal', function () {
     $response->assertStatus(201)
              ->assertJsonPath('data.meal_type_label', 'lunch');
 });
+
+test('can delete a meal', function () {
+    $meal = Meal::factory()->create();
+
+    $this->mock(\App\Services\CloudinaryService::class)
+         ->shouldReceive('delete')
+         ->once()
+         ->andReturn(true);
+
+    $response = $this->deleteJson("/api/meals/{$meal->id}");
+
+    $response->assertStatus(204);
+    $this->assertDatabaseMissing('meals', ['id' => $meal->id]);
+});
