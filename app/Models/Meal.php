@@ -15,6 +15,10 @@ class Meal extends Model
         'remark',
         'taken_at',
     ];
+    
+    protected $casts = [
+        'taken_at' => 'datetime',
+    ];
 
     protected $appends = ['meal_type_label'];
 

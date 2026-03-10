@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Http\UploadedFile;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
+class CloudinaryService
+{
+    /**
+     * 上傳照片到 Cloudinary
+     * 
+     * @param UploadedFile $file
+     * @return string public_id
+     */
+    public function upload(UploadedFile $file): string
+    {
+        $result = app(\Cloudinary\Cloudinary::class)
+            ->uploadApi()
+            ->upload($file->getRealPath(), [
+                'folder' => 'daily-meals',
+                'transformation' => [
+                    'width' => 800,
+                    'crop' => 'limit',
+                    'fetch_format' => 'auto',
+                    'quality' => 'auto',
+                ],
+            ]);
+    
+        return $result['public_id'];
+    }
+
+    /**
+     * 刪除照片
+     * 
+     * @param string $publicId
+     * @return bool
+     */
+    public function delete(string $publicId): bool
+    {
+        $result = app(\Cloudinary\Cloudinary::class)
+            ->uploadApi()
+            ->destroy($publicId);
+    
+        return $result['result'] === 'ok';
+    }
+
+    /**
+     * 取得照片 URL
+     * 
+     * @param string $publicId
+     * @param array $transforms
+     * @return string
+     */
+    public function getUrl(string $publicId, array $transforms = []): string
+    {
+        return (string) app(\Cloudinary\Cloudinary::class)->image($publicId)->toUrl();
+    }
+    
+
+    /**
+     * 取得縮圖 URL
+     * 
+     * @param string $publicId
+     * @return string
+     */
+    public function getThumbnailUrl(string $publicId): string
+    {
+        return (string) app(\Cloudinary\Cloudinary::class)
+            ->image($publicId)
+            ->resize(\Cloudinary\Transformation\Resize::fill(300, 300))
+            ->toUrl();
+    }
+}
