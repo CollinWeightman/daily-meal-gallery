@@ -60,4 +60,8 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: sail
           DB_PASSWORD: password
+          CLOUDINARY_CLOUD_NAME: fake
+          CLOUDINARY_API_KEY: fake
+          CLOUDINARY_API_SECRET: fake
+          CLOUDINARY_URL: cloudinary://fake:fake@fake
         run: php artisan test
