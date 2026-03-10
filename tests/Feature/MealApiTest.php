@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Meal;
+use App\Models\User;
 
 test('can list meals', function () {
     Meal::factory(3)->create();
@@ -36,6 +37,7 @@ test('can get single meal', function () {
 });
 
 test('can store a meal', function () {
+    $user = User::factory()->create();
     $this->mock(\App\Services\CloudinaryService::class)
     ->shouldReceive('upload')
     ->once()
@@ -45,17 +47,19 @@ test('can store a meal', function () {
     ->shouldReceive('getThumbnailUrl')
     ->andReturn('https://res.cloudinary.com/fake/image/upload/c_fill,h_300,w_300/daily-meals/test123');
 
-    $response = $this->postJson('/api/meals', [
-        'photo' => \Illuminate\Http\UploadedFile::fake()->image('food.jpg'),
-        'meal_type' => 2,
-        'remark' => 'Test meal',
-    ]);
+    $response = $this->actingAs($user, 'sanctum')
+        ->postJson('/api/meals', [
+            'photo' => \Illuminate\Http\UploadedFile::fake()->image('food.jpg'),
+            'meal_type' => 2,
+            'remark' => 'Test meal',
+        ]);
 
     $response->assertStatus(201)
              ->assertJsonPath('data.meal_type_label', 'lunch');
 });
 
 test('can delete a meal', function () {
+    $user = User::factory()->create();
     $meal = Meal::factory()->create();
 
     $this->mock(\App\Services\CloudinaryService::class)
@@ -63,7 +67,8 @@ test('can delete a meal', function () {
          ->once()
          ->andReturn(true);
 
-    $response = $this->deleteJson("/api/meals/{$meal->id}");
+    $response = $this->actingAs($user, 'sanctum')
+         ->deleteJson("/api/meals/{$meal->id}");
 
     $response->assertStatus(204);
     $this->assertDatabaseMissing('meals', ['id' => $meal->id]);
