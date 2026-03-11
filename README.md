@@ -31,6 +31,8 @@ cd ~/workplace/daily-meal-gallery
 ./vendor/bin/sail php ./vendor/bin/pest
 ```
 
+For manual integration testing, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
 ## Open in Editor
 ```bash
 # In WSL Ubuntu terminal
