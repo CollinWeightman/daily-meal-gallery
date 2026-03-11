@@ -41,6 +41,14 @@ cursor .    # Cursor
 code .      # VSCode
 ```
 
+## Frontend Development
+```bash
+cd frontend
+npm run dev
+```
+
+App will be available at http://localhost:5174/
+
 ## Stop
 
 ```bash
