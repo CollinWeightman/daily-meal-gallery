@@ -18,6 +18,7 @@ class Meal extends Model
     
     protected $casts = [
         'taken_at' => 'datetime',
+        'meal_type' => 'integer',
     ];
 
     protected $appends = ['meal_type_label'];
