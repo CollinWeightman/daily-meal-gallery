@@ -1,7 +1,22 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+
+const HomePage     = lazy(() => import('./pages/HomePage'));
+const LoginPage    = lazy(() => import('./pages/LoginPage'));
+const UploadPage   = lazy(() => import('./pages/UploadPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-blue-600">Daily Meal Gallery</h1>
-    </div>
-  )
+    <BrowserRouter>
+      <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+        <Routes>
+          <Route path="/"             element={<HomePage />} />
+          <Route path="/login"        element={<LoginPage />} />
+          <Route path="/admin/upload" element={<UploadPage />} />
+          <Route path="/admin"        element={<DashboardPage />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
 }
