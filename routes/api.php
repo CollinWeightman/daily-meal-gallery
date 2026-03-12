@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MealController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 // 認證
@@ -17,4 +18,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/meals', [MealController::class, 'store']);
     Route::patch('/meals/{meal}', [MealController::class, 'update']);
     Route::delete('/meals/{meal}', [MealController::class, 'destroy']);
+    Route::get('/admin/dashboard', [DashboardController::class, 'index']);
 });
