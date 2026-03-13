@@ -149,7 +149,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     try {
       const blob = rotation !== 0 ? await getRotatedBlob() : file;
       const formData = new FormData();
-      formData.append('image', blob, file.name);
+      formData.append('photo', blob, file.name);
       formData.append('meal_type', String(mealType));
       if (takenAt) formData.append('taken_at', takenAt);
       if (remark) formData.append('remark', remark);
