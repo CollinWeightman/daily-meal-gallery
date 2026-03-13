@@ -52,7 +52,7 @@ class CloudinaryService
      * @param array $transforms
      * @return string
      */
-    public function getUrl(string $publicId, array $transforms = []): string
+    public function getUrl(string $publicId): string
     {
         return (string) app(\Cloudinary\Cloudinary::class)->image($publicId)->toUrl();
     }
@@ -70,5 +70,35 @@ class CloudinaryService
             ->image($publicId)
             ->resize(\Cloudinary\Transformation\Resize::fill(300, 300))
             ->toUrl();
+    }
+
+    
+    /**
+     * 取得 Cloudinary 用量資訊
+     *
+     * @return array|null 用量資料，API 失敗時回傳 null
+     */
+    public function getUsage(): ?array
+    {
+        $config = app(\Cloudinary\Cloudinary::class)->configuration;
+
+        $response = \Illuminate\Support\Facades\Http::withBasicAuth(
+            $config->cloud->apiKey,
+            $config->cloud->apiSecret
+        )->get("https://api.cloudinary.com/v1_1/{$config->cloud->cloudName}/usage");
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $body = $response->json();
+
+        return [
+            'credits_used'         => $body['credits']['usage']          ?? 0,
+            'credits_limit'        => $body['credits']['limit']           ?? 25,
+            'storage_used_gb'      => round(($body['storage']['usage']    ?? 0) / 1073741824, 3),
+            'bandwidth_used_gb'    => round(($body['bandwidth']['usage']  ?? 0) / 1073741824, 3),
+            'transformations_used' => $body['transformations']['usage']   ?? 0,
+        ];
     }
 }

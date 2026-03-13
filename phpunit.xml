@@ -36,8 +36,6 @@
         <env name="DB_PORT" value="5432"/>
         <env name="DB_USERNAME" value="sail"/>
         <env name="DB_PASSWORD" value="password"/>
-        <env name="CLOUDINARY_CLOUD_NAME" value="fake_cloud"/>
-        <env name="CLOUDINARY_API_KEY" value="fake_key"/>
-        <env name="CLOUDINARY_API_SECRET" value="fake_secret"/>
+
     </php>
 </phpunit>
