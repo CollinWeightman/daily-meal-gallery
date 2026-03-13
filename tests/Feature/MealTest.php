@@ -2,6 +2,7 @@
 
 use App\Models\Meal;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -24,4 +25,26 @@ test('meal type label returns correct values', function () {
         ->and($lunch->meal_type_label)->toBe('lunch')
         ->and($dinner->meal_type_label)->toBe('dinner')
         ->and($snack->meal_type_label)->toBe('snack');
+});
+
+test('can update meal metadata', function () {
+    $user = User::factory()->create();
+    $meal = Meal::factory()->create(['meal_type' => 1, 'remark' => 'old']);
+
+    $response = $this->actingAs($user)
+        ->patchJson("/api/meals/{$meal->id}", [
+            'meal_type' => 2,
+            'remark'    => 'updated remark',
+        ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.meal_type', 2)
+        ->assertJsonPath('data.remark', 'updated remark');
+});
+
+test('cannot update meal without auth', function () {
+    $meal = Meal::factory()->create();
+
+    $this->patchJson("/api/meals/{$meal->id}", ['meal_type' => 2])
+        ->assertUnauthorized();
 });
