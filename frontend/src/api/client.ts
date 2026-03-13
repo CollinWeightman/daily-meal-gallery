@@ -1,10 +1,10 @@
-// frontend/src/api/client.ts
 import axios from 'axios';
 
 const client = axios.create({
   baseURL: 'http://localhost/api',
 });
 
+// Request interceptor — 帶 Bearer token
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
   if (token) {
@@ -12,5 +12,17 @@ client.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor — 401 自動登出並導向 /login
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default client;

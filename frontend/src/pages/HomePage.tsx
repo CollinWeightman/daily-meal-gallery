@@ -1,130 +1,137 @@
-// frontend/src/pages/HomePage.tsx
-import { useState, useEffect } from 'react';
-import client from '../api/client';
-import type { Meal, MealListResponse } from '../types/meal';
+import { useState, useCallback, useEffect } from 'react';
+import type { Meal } from '@/types/meal';
+import { useMeals } from '@/hooks/useMeals';
+import { useAvailableFilters } from '@/hooks/useAvailableFilters';
+import { MealGrid } from '@/components/meals/MealGrid';
+import { MealLightbox } from '@/components/meals/MealLightbox';
 
-interface Filters {
-    meal_type: string;
-    year: string;
-    month: string;
-}
+const MEAL_TYPES = [
+    { value: 0, label: 'All' },
+    { value: 1, label: 'Breakfast' },
+    { value: 2, label: 'Lunch' },
+    { value: 3, label: 'Dinner' },
+    { value: 4, label: 'Snack' },
+];
 
-export default function HomePage() {
-    const [meals, setMeals] = useState<Meal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-    const [filters, setFilters] = useState<Filters>({
-        meal_type: '',
-        year: '',
-        month: '',
-    });
+interface HomePageProps {
+    uploadOpen: boolean;
+    setUploadOpen: (open: boolean) => void;
+    refreshKey: number;
+  }
 
-    useEffect(() => {
-        const fetchMeals = async () => {
-            setLoading(true);
-            setError(false);
-            try {
-                const params: Record<string, string> = {};
-                if (filters.meal_type) params.meal_type = filters.meal_type;
-                if (filters.year)      params.year      = filters.year;
-                if (filters.month)     params.month     = filters.month;
+  export default function HomePage({ setUploadOpen: _setUploadOpen, refreshKey }: HomePageProps) {
+    const [mealType, setMealType] = useState(0);
+    const [year, setYear] = useState<number | undefined>();
+    const [month, setMonth] = useState<number | undefined>();
+    const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
 
-                const res = await client.get<MealListResponse>('/meals', { params });
-                setMeals(res.data.data);
-            } catch {
-                setError(true);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchMeals();
-    }, [filters]);
-
-    const handleFilterChange = (key: keyof Filters, value: string) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value,
-            ...(key === 'year' && !value ? { month: '' } : {}),
-        }));
+    const filters = {
+        meal_type: mealType || undefined,
+        year,
+        month,
     };
 
+    const { meals, loading, initialLoading, hasMore, loadMore, refresh } = useMeals(filters);
+
+    useEffect(() => {
+      if (refreshKey > 0) refresh();
+    }, [refreshKey]);
+
+    const { filters: availableFilters } = useAvailableFilters();
+
+    const hasFilters = !!(mealType || year || month);
+
+    const selectedYear = availableFilters.years.find(y => y.year === year);
+    const availableMonths = selectedYear?.months ?? [];
+
+    const handleYearChange = (val: string) => {
+        const y = val === '' ? undefined : Number(val);
+        setYear(y);
+        setMonth(undefined);
+    };
+
+    const handleMonthChange = (val: string) => {
+        setMonth(val === '' ? undefined : Number(val));
+    };
+
+    const handleMealClick = useCallback((meal: Meal) => {
+        setSelectedMeal(meal);
+      }, []);
+
+
+      
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Daily Meal Gallery</h1>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+            {/* Filter 區塊 */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
 
-        {/* 過濾器 */}
-        <div className="flex gap-4 mb-8">
-            <select
-                value={filters.meal_type}
-                onChange={e => handleFilterChange('meal_type', e.target.value)}
-                className="border rounded px-3 py-2"
-            >
-            <option value="">All Types</option>
-            <option value="1">Breakfast</option>
-            <option value="2">Lunch</option>
-            <option value="3">Dinner</option>
-            <option value="4">Snack</option>
-            </select>
+                {/* 餐別 Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                {MEAL_TYPES.map(t => (
+                    <button
+                    key={t.value}
+                    onClick={() => setMealType(t.value)}
+                    className={[
+                        'px-3 py-1 text-sm rounded-full border transition-colors',
+                        mealType === t.value
+                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                        : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]',
+                    ].join(' ')}
+                    >
+                    {t.label}
+                    </button>
+                ))}
+                </div>
 
-            <select
-                value={filters.year}
-                onChange={e => handleFilterChange('year', e.target.value)}
-                className="border rounded px-3 py-2"
-            >
-            <option value="">All Years</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            </select>
+                {/* 年份下拉 — 多於一個年份才顯示 */}
+                {availableFilters.years.length > 1 && (
+                <select
+                    value={year ?? ''}
+                    onChange={e => handleYearChange(e.target.value)}
+                    className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="">All Years</option>
+                    {availableFilters.years.map(y => (
+                    <option key={y.year} value={y.year}>{y.year}</option>
+                    ))}
+                </select>
+                )}
 
-            <select
-                value={filters.month}
-                onChange={e => handleFilterChange('month', e.target.value)}
-                disabled={!filters.year}
-                className="border rounded px-3 py-2 disabled:opacity-50"
-            >
-                <option value="">All Months</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                    <option key={m} value={String(m)}>
+                {/* 月份下拉 — 選了年份且多於一個月份才顯示 */}
+                {year && availableMonths.length > 1 && (
+                <select
+                    value={month ?? ''}
+                    onChange={e => handleMonthChange(e.target.value)}
+                    className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="">All Months</option>
+                    {availableMonths.map(m => (
+                    <option key={m} value={m}>
                         {new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}
                     </option>
-                ))}
-            </select>
-        </div>
-
-
-        {/* 內容區 */}
-        {loading && (
-            <div className="text-center py-16 text-gray-500">Loading...</div>
-        )}
-
-        {!loading && error && (
-            <div className="text-center py-16 text-red-500">Failed to load</div>
-        )}
-
-        {!loading && !error && meals.length === 0 && (
-            <div className="text-center py-16 text-gray-500">No meals found</div>
-        )}
-
-        {!loading && !error && meals.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {meals.map(meal => (
-                <div key={meal.id} className="rounded overflow-hidden shadow">
-                <img
-                    src={meal.thumbnail_url}
-                    alt={meal.meal_type_label}
-                    className="w-full aspect-square object-cover"
-                />
-                <div className="p-2">
-                    <p className="text-sm font-medium capitalize">{meal.meal_type_label}</p>
-                    {meal.remark && (
-                    <p className="text-xs text-gray-500 truncate">{meal.remark}</p>
-                    )}
-                </div>
-                </div>
-            ))}
+                    ))}
+                </select>
+                )}
             </div>
-        )}
+
+            {/* 照片網格 */}
+            <MealGrid
+                meals={meals}
+                loading={loading}
+                initialLoading={initialLoading}
+                hasMore={hasMore}
+                hasFilters={hasFilters}
+                onLoadMore={loadMore}
+                onMealClick={handleMealClick}
+            />
+            <MealLightbox
+                meal={selectedMeal}
+                onClose={() => setSelectedMeal(null)}
+                onDeleted={refresh}
+                onUpdated={refresh}
+            />
         </div>
+
+
     );
 }
