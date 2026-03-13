@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Meal } from '@/types/meal';
 import { useMeals } from '@/hooks/useMeals';
 import { useAvailableFilters } from '@/hooks/useAvailableFilters';
@@ -16,9 +16,10 @@ const MEAL_TYPES = [
 interface HomePageProps {
     uploadOpen: boolean;
     setUploadOpen: (open: boolean) => void;
-}
+    refreshKey: number;
+  }
 
-export default function HomePage({ setUploadOpen: _setUploadOpen }: HomePageProps) {
+  export default function HomePage({ setUploadOpen: _setUploadOpen, refreshKey }: HomePageProps) {
     const [mealType, setMealType] = useState(0);
     const [year, setYear] = useState<number | undefined>();
     const [month, setMonth] = useState<number | undefined>();
@@ -31,6 +32,11 @@ export default function HomePage({ setUploadOpen: _setUploadOpen }: HomePageProp
     };
 
     const { meals, loading, initialLoading, hasMore, loadMore, refresh } = useMeals(filters);
+
+    useEffect(() => {
+      if (refreshKey > 0) refresh();
+    }, [refreshKey]);
+
     const { filters: availableFilters } = useAvailableFilters();
 
     const hasFilters = !!(mealType || year || month);
@@ -52,6 +58,8 @@ export default function HomePage({ setUploadOpen: _setUploadOpen }: HomePageProp
         setSelectedMeal(meal);
       }, []);
 
+
+      
     return (
         <div className="max-w-7xl mx-auto px-4 py-6">
             {/* Filter 區塊 */}

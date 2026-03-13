@@ -31,6 +31,8 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
 function AppLayout() {
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey(k => k + 1);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
@@ -40,6 +42,7 @@ function AppLayout() {
         onOpenChange={setUploadOpen}
         onUploaded={() => {
           setUploadOpen(false);
+          triggerRefresh();
         }}
       />
       <main>
@@ -49,7 +52,7 @@ function AppLayout() {
           </div>
         }>
           <Routes>
-            <Route path="/" element={<HomePage uploadOpen={uploadOpen} setUploadOpen={setUploadOpen} />} />
+          <Route path="/" element={<HomePage uploadOpen={uploadOpen} setUploadOpen={setUploadOpen} refreshKey={refreshKey} />} />
             <Route path="/login" element={
               <PublicOnlyRoute>
                 <LoginPage />

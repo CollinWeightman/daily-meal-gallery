@@ -38,6 +38,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
   const [takenAtLocked, setTakenAtLocked] = useState(false);
   const [remark, setRemark] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -146,6 +147,8 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
+    setUploadError('');
+    
     try {
       const blob = rotation !== 0 ? await getRotatedBlob() : file;
       const formData = new FormData();
@@ -161,9 +164,12 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       showSnackbar('Meal uploaded!');
       handleClose();
       onUploaded();
-    } catch {
-      showSnackbar('Upload failed', 'error');
-    } finally {
+    } catch (err: unknown) {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })
+            ?.response?.data?.message ?? 'Upload failed';
+        setUploadError(msg);
+      } finally {
       setUploading(false);
     }
   };
@@ -273,6 +279,13 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
               className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
             />
           </div>
+          {/* 錯誤訊息 */}
+          {uploadError && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-md">
+              {uploadError}
+            </p>
+          )}
+
 
           {/* 上傳按鈕 */}
           <button
