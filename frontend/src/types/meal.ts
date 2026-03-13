@@ -35,8 +35,10 @@ export interface Meal {
   }
   
   export interface DashboardStats {
-    total_this_month: number;
-    by_meal_type: {
+    total_meals: number;
+    today_uploads: number;
+    this_week_uploads: number;
+    breakdown: {
       breakfast: number;
       lunch: number;
       dinner: number;
