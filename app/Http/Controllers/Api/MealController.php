@@ -8,6 +8,8 @@ use App\Http\Resources\MealResource;
 use App\Models\Meal;
 use App\Http\Requests\StoreMealRequest;
 use App\Services\CloudinaryService;
+use App\Http\Requests\UpdateMealRequest;
+use Illuminate\Http\JsonResponse;
 
 class MealController extends Controller
 {
@@ -68,9 +70,11 @@ class MealController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateMealRequest $request, Meal $meal): MealResource
     {
-        //
+        $meal->update($request->validated());
+    
+        return new MealResource($meal->fresh());
     }
 
     /**
@@ -81,5 +85,25 @@ class MealController extends Controller
         $cloudinary->delete($meal->cloudinary_public_id);
         $meal->delete();
         return response()->noContent();
+    }
+
+    public function availableFilters(): JsonResponse
+    {
+        $rows = Meal::query()
+            ->selectRaw('EXTRACT(YEAR FROM COALESCE(taken_at, created_at))::int AS year')
+            ->selectRaw('EXTRACT(MONTH FROM COALESCE(taken_at, created_at))::int AS month')
+            ->groupByRaw('1, 2')
+            ->orderByRaw('1 DESC, 2 ASC')
+            ->get();
+
+        $years = $rows
+            ->groupBy('year')
+            ->map(fn($months, $year) => [
+                'year'   => $year,
+                'months' => $months->pluck('month')->map(fn($m) => (int) $m)->values(),
+            ])
+            ->values();
+
+        return response()->json(['years' => $years]);
     }
 }
