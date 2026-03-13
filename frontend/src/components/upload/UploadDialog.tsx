@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect} from 'react';
 import {
   Dialog,
   DialogContent,
@@ -39,9 +39,30 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
   const [remark, setRemark] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [canvasPreview, setCanvasPreview] = useState<string | null>(null);
+
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!file || !previewUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const rad = (rotation * Math.PI) / 180;
+      const w = rotation % 180 === 0 ? img.width : img.height;
+      const h = rotation % 180 === 0 ? img.height : img.width;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      setCanvasPreview(canvas.toDataURL(file.type));
+    };
+    img.src = previewUrl;
+  }, [file, previewUrl, rotation]);
 
   const reset = () => {
     setFile(null);
@@ -192,12 +213,11 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             style={{ minHeight: 200 }}
             onClick={() => inputRef.current?.click()}
           >
-            {previewUrl ? (
+            {canvasPreview ? (
               <img
-                src={previewUrl}
+                src={canvasPreview}
                 alt="preview"
                 className="w-full object-contain max-h-64"
-                style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.2s' }}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-48 gap-2 text-[var(--text-muted)]">
