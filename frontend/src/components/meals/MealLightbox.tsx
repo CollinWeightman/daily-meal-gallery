@@ -103,124 +103,126 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     return (
         <>
         <Dialog open={!!meal} onOpenChange={open => { if (!open) onClose(); }}>
-            <DialogContent
-                aria-describedby={undefined}
-                className="max-w-5xl w-[95vw] p-0 overflow-hidden bg-[var(--bg-elevated)] border-[var(--border)] gap-0 [&>button]:z-20"
-                >
-                <DialogTitle className="sr-only">{meal.meal_type_label}</DialogTitle>
-                <div className="flex flex-col md:flex-row md:h-[80vh]">
-                    {/* 左側：圖片 — 填滿高度 */}
-                    <div className="md:w-[60%] bg-black flex items-center justify-center h-[50vw] md:h-full">
-                    <img
-                        src={meal.cloudinary_url}
-                        alt={meal.meal_type_label}
-                        className="w-full h-full object-contain"
+        <DialogContent
+            aria-describedby={undefined}
+            className="p-0 overflow-hidden bg-[var(--bg-elevated)] border-[var(--border)] gap-0 [&>button]:z-20 w-[95vw] max-w-none sm:max-w-none md:w-[85vw] md:max-w-5xl"
+        >
+            <DialogTitle className="sr-only">{meal.meal_type_label}</DialogTitle>
+
+            {/* 手機：上下堆疊 / 桌機：左右分割 */}
+            <div className="flex flex-col md:flex-row">
+
+            {/* 圖片區 — 永遠優先，撐滿可用空間 */}
+            <div className="w-full md:w-[65%] bg-black flex items-center justify-center" style={{ minHeight: '40vw', maxHeight: '80vh' }}>
+                <img
+                src={meal.cloudinary_url}
+                alt={meal.meal_type_label}
+                className="w-full h-full object-contain"
+                style={{ maxHeight: '80vh' }}
+                />
+            </div>
+
+            {/* 資訊區 — 次要，手機在下、桌機在右 */}
+            <div className="w-full md:w-[35%] p-5 flex flex-col gap-4 border-t border-[var(--border)] md:border-t-0 md:border-l md:overflow-y-auto" style={{ maxHeight: '80vh' }}>
+                {editing ? (
+                <>
+                    <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Edit Meal</p>
+
+                    <div>
+                    <p className="text-xs text-[var(--text-muted)] mb-2">Meal Type</p>
+                    <div className="flex flex-wrap gap-1.5">
+                        {MEAL_TYPE_OPTIONS.map(t => (
+                        <button
+                            key={t.value}
+                            onClick={() => setEditMealType(t.value)}
+                            className={[
+                            'px-3 py-1 text-xs rounded-full border transition-colors',
+                            editMealType === t.value
+                                ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                                : 'text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]',
+                            ].join(' ')}
+                        >
+                            {t.label}
+                        </button>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div>
+                    <p className="text-xs text-[var(--text-muted)] mb-1.5">Date & Time</p>
+                    <input
+                        type="datetime-local"
+                        value={editTakenAt}
+                        onChange={e => setEditTakenAt(e.target.value)}
+                        className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                     />
                     </div>
 
-                    {/* 右側：資訊 */}
-                    <div className="md:w-[40%] p-6 flex flex-col gap-4 md:h-full">
-                    {editing ? (
-                        <>
-                        <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Edit Meal</p>
-
-                        <div>
-                            <p className="text-xs text-[var(--text-muted)] mb-2">Meal Type</p>
-                            <div className="flex flex-wrap gap-1.5">
-                            {MEAL_TYPE_OPTIONS.map(t => (
-                                <button
-                                key={t.value}
-                                onClick={() => setEditMealType(t.value)}
-                                className={[
-                                    'px-3 py-1 text-xs rounded-full border transition-colors',
-                                    editMealType === t.value
-                                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                                    : 'text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]',
-                                ].join(' ')}
-                                >
-                                {t.label}
-                                </button>
-                            ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="text-xs text-[var(--text-muted)] mb-1.5">Date & Time</p>
-                            <input
-                            type="datetime-local"
-                            value={editTakenAt}
-                            onChange={e => setEditTakenAt(e.target.value)}
-                            className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                            />
-                        </div>
-
-                        <div>
-                            <p className="text-xs text-[var(--text-muted)] mb-1.5">Remark</p>
-                            <textarea
-                            value={editRemark}
-                            onChange={e => setEditRemark(e.target.value)}
-                            rows={3}
-                            placeholder="Optional note..."
-                            className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
-                            />
-                        </div>
-
-                        <div className="flex gap-2 mt-auto">
-                            <button
-                            onClick={() => setEditing(false)}
-                            className="flex-1 px-4 py-2 text-sm rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                            >
-                            Cancel
-                            </button>
-                            <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-colors disabled:opacity-60"
-                            >
-                            <Check size={14} />
-                            {saving ? 'Saving…' : 'Save'}
-                            </button>
-                        </div>
-                        </>
-                    ) : (
-                        <>
-                        <div>
-                            <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-[var(--bg-secondary)] text-[var(--accent)] border border-[var(--border)]">
-                            {meal.meal_type_label}
-                            </span>
-                        </div>
-
-                        {formattedDate && (
-                            <p className="text-sm text-[var(--text-secondary)]">{formattedDate}</p>
-                        )}
-
-                        {meal.remark && (
-                            <p className="text-sm text-[var(--text-primary)] leading-relaxed">{meal.remark}</p>
-                        )}
-
-                        {isAuthenticated && (
-                            <div className="flex gap-2 mt-auto pt-4 border-t border-[var(--border)]">
-                            <button
-                                onClick={openEdit}
-                                className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                            >
-                                <Pencil size={14} />
-                                Edit
-                            </button>
-                            <button
-                                onClick={() => setConfirmDelete(true)}
-                                className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-md border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30 transition-colors"
-                            >
-                                <Trash2 size={14} />
-                                Delete
-                            </button>
-                            </div>
-                        )}
-                        </>
-                    )}
+                    <div>
+                    <p className="text-xs text-[var(--text-muted)] mb-1.5">Remark</p>
+                    <textarea
+                        value={editRemark}
+                        onChange={e => setEditRemark(e.target.value)}
+                        rows={3}
+                        placeholder="Optional note..."
+                        className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
+                    />
                     </div>
-                </div>
-            </DialogContent>
+
+                    <div className="flex gap-2 mt-auto pt-2">
+                    <button
+                        onClick={() => setEditing(false)}
+                        className="flex-1 px-4 py-2 text-sm rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-colors disabled:opacity-60"
+                    >
+                        <Check size={14} />
+                        {saving ? 'Saving…' : 'Save'}
+                    </button>
+                    </div>
+                </>
+                ) : (
+                <>
+                    <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-[var(--bg-secondary)] text-[var(--accent)] border border-[var(--border)] self-start">
+                    {meal.meal_type_label}
+                    </span>
+
+                    {formattedDate && (
+                    <p className="text-sm text-[var(--text-secondary)]">{formattedDate}</p>
+                    )}
+
+                    {meal.remark && (
+                    <p className="text-sm text-[var(--text-primary)] leading-relaxed">{meal.remark}</p>
+                    )}
+
+                    {isAuthenticated && (
+                    <div className="flex gap-2 mt-auto pt-4 border-t border-[var(--border)]">
+                        <button
+                        onClick={openEdit}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                        >
+                        <Pencil size={14} />
+                        Edit
+                        </button>
+                        <button
+                        onClick={() => setConfirmDelete(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-md border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                        <Trash2 size={14} />
+                        Delete
+                        </button>
+                    </div>
+                    )}
+                </>
+                )}
+            </div>
+            </div>
+        </DialogContent>
         </Dialog>
 
         {/* 刪除確認 Dialog */}
