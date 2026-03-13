@@ -52,7 +52,7 @@ class CloudinaryService
      * @param array $transforms
      * @return string
      */
-    public function getUrl(string $publicId, array $transforms = []): string
+    public function getUrl(string $publicId): string
     {
         return (string) app(\Cloudinary\Cloudinary::class)->image($publicId)->toUrl();
     }
