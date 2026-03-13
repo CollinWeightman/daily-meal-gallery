@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
     Dialog,
     DialogContent,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -106,6 +107,7 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                 aria-describedby={undefined}
                 className="max-w-5xl w-[95vw] p-0 overflow-hidden bg-[var(--bg-elevated)] border-[var(--border)] gap-0 [&>button]:z-20"
                 >
+                <DialogTitle className="sr-only">{meal.meal_type_label}</DialogTitle>
                 <div className="flex flex-col md:flex-row md:h-[80vh]">
                     {/* 左側：圖片 — 填滿高度 */}
                     <div className="md:w-[60%] bg-black flex items-center justify-center h-[50vw] md:h-full">
