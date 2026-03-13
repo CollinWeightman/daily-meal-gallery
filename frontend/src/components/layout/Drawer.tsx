@@ -47,66 +47,67 @@ export function Drawer({ children, onUploadClick }: DrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent
-        side="left"
-        className="w-64 bg-[var(--bg-primary)] border-r border-[var(--border)]"
-      >
-        <SheetHeader className="mb-6">
-          <SheetTitle className="font-display text-left text-[var(--text-primary)]">
-            Daily Meal
-          </SheetTitle>
-        </SheetHeader>
+        <SheetTrigger asChild>{children}</SheetTrigger>
+        <SheetContent
+            side="left"
+            aria-describedby={undefined}
+            className="w-64 bg-[var(--bg-primary)] border-r border-[var(--border)]"
+        >
+            <SheetHeader className="mb-6">
+            <SheetTitle className="font-display text-left text-[var(--text-primary)]">
+                Daily Meal
+            </SheetTitle>
+            </SheetHeader>
 
-        <nav className="flex flex-col gap-1">
-          {isAuthenticated ? (
-            <>
-              <button
-                onClick={handleUpload}
-                className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors text-left"
-              >
-                <Upload size={16} />
-                Upload
-              </button>
-              <Link
-                to="/dashboard"
+            <nav className="flex flex-col gap-1">
+            {isAuthenticated ? (
+                <>
+                <button
+                    onClick={handleUpload}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors text-left"
+                >
+                    <Upload size={16} />
+                    Upload
+                </button>
+                <Link
+                    to="/dashboard"
+                    onClick={close}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors"
+                >
+                    <LayoutDashboard size={16} />
+                    Dashboard
+                </Link>
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors text-left"
+                >
+                    <LogOut size={16} />
+                    Logout
+                </button>
+                </>
+            ) : (
+                <Link
+                to="/login"
                 onClick={close}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors"
-              >
-                <LayoutDashboard size={16} />
-                Dashboard
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors text-left"
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              onClick={close}
-              className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors"
-            >
-              <LogIn size={16} />
-              Login
-            </Link>
-          )}
+                >
+                <LogIn size={16} />
+                Login
+                </Link>
+            )}
 
-          {/* 分隔線 + 主題切換 */}
-          <div className="border-t border-[var(--border)] mt-3 pt-3">
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors w-full text-left"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </button>
-          </div>
-        </nav>
-      </SheetContent>
+            {/* 分隔線 + 主題切換 */}
+            <div className="border-t border-[var(--border)] mt-3 pt-3">
+                <button
+                onClick={toggleTheme}
+                className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors w-full text-left"
+                >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </button>
+            </div>
+            </nav>
+        </SheetContent>
     </Sheet>
   );
 }
