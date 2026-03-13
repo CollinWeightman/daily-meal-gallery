@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SnackbarProvider } from '@/contexts/SnackbarContext';
 import { Header } from '@/components/layout/Header';
+import { UploadDialog } from '@/components/upload/UploadDialog';
 
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -34,6 +35,13 @@ function AppLayout() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <Header onUploadClick={() => setUploadOpen(true)} />
+      <UploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onUploaded={() => {
+          setUploadOpen(false);
+        }}
+      />
       <main>
         <Suspense fallback={
           <div className="flex items-center justify-center h-64 text-[var(--text-muted)]">
