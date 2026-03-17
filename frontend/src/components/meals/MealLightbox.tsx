@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -42,6 +42,13 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    useEffect(() => {
+        setEditing(false);
+        setConfirmDelete(false);
+        setEditMealType(meal?.meal_type ?? 1);
+        setEditRemark(meal?.remark ?? '');
+        setEditTakenAt(meal?.taken_at ? meal.taken_at.slice(0, 16) : '');
+    }, [meal?.id]);  // meal.id 變了才觸發，不會每次 render 都跑
 
     // 編輯表單 state
     const [editMealType, setEditMealType] = useState(meal?.meal_type ?? 1);
