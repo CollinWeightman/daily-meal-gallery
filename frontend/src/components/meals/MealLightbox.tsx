@@ -117,10 +117,10 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
             <DialogTitle className="sr-only">{meal.meal_type_label}</DialogTitle>
 
             {/* 手機：上下堆疊 / 桌機：左右分割 */}
-            <div className="flex flex-col md:flex-row">
+            <div className="flex flex-col md:flex-row overflow-y-auto max-h-[90vh]">
 
             {/* 圖片區 — 永遠優先，撐滿可用空間 */}
-            <div className="w-full md:w-[65%] bg-black flex items-center justify-center" style={{ minHeight: '40vw', maxHeight: '80vh' }}>
+            <div className="w-full md:w-[65%] bg-black flex items-center justify-center" style={{ minHeight: '30vw', maxHeight: '80vh' }}>
                 <img
                 src={meal.cloudinary_url}
                 alt={meal.meal_type_label}
@@ -130,7 +130,7 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
             </div>
 
             {/* 資訊區 — 次要，手機在下、桌機在右 */}
-            <div className="w-full md:w-[35%] p-5 flex flex-col gap-4 border-t border-[var(--border)] md:border-t-0 md:border-l md:overflow-y-auto" style={{ maxHeight: '80vh' }}>
+            <div className="w-full md:w-[35%] p-5 flex flex-col gap-4 border-t border-[var(--border)] md:border-t-0 md:border-l overflow-y-auto" style={{ maxHeight: '80vh' }}>
                 {editing ? (
                 <>
                     <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Edit Meal</p>
