@@ -10,12 +10,23 @@ curl -s -X POST http://localhost/api/login \
   -d '{"email":"admin@dmg.com","password":"root"}'
 ```
 
-### Upload test image
+### Upload test image (single photo)
 ```bash
 curl -s -X POST http://localhost/api/meals \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Accept: application/json" \
-  -F "photo=@/home/user/test.png" \
+  -F "photos[]=@/home/user/test.png" \
+  -F "meal_type=2" \
+  -F "remark=Test upload"
+```
+
+### Upload test image (multiple photos)
+```bash
+curl -s -X POST http://localhost/api/meals \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json" \
+  -F "photos[]=@/home/user/test1.png" \
+  -F "photos[]=@/home/user/test2.png" \
   -F "meal_type=2" \
   -F "remark=Test upload"
 ```
@@ -23,4 +34,4 @@ curl -s -X POST http://localhost/api/meals \
 ### Expected response
 - `meal_type` should be an integer
 - `meal_type_label` should be the corresponding string (1=breakfast, 2=lunch, 3=dinner, 4=snack)
-- `cloudinary_url` and `thumbnail_url` should be valid Cloudinary URLs
+- `photos` should be an array, each item contains `id`, `url`, `thumbnail_url`

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Meal;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 it('returns empty years when no meals exist', function () {
     $this->getJson('/api/meals/available-filters')
