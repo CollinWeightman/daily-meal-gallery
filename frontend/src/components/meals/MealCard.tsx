@@ -21,7 +21,7 @@ export function MealCard({ meal, onClick }: MealCardProps) {
             </div>
         ) : (
             <img
-                src={meal.thumbnail_url}
+                src={meal.photos[0]?.thumbnail_url}
                 alt={meal.meal_type_label}
                 loading="lazy"
                 onError={() => setImgError(true)}

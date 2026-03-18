@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect} from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { useSnackbar } from '@/contexts/SnackbarContext';
 import client from '@/api/client';
-import { RotateCcw, RotateCw, Upload } from 'lucide-react';
+import { RotateCcw, RotateCw, Upload, X } from 'lucide-react';
 
 const MEAL_TYPE_OPTIONS = [
   { value: 1, label: 'Breakfast', defaultHour: 8 },
@@ -21,6 +21,13 @@ function toDatetimeLocal(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+interface PhotoEntry {
+  file: File;
+  previewUrl: string;
+  rotation: number;
+  canvasPreview: string | null;
+}
+
 interface UploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,48 +37,25 @@ interface UploadDialogProps {
 export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogProps) {
   const { showSnackbar } = useSnackbar();
 
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [rotation, setRotation] = useState(0);
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [mealType, setMealType] = useState(1);
   const [takenAt, setTakenAt] = useState('');
   const [takenAtLocked, setTakenAtLocked] = useState(false);
   const [remark, setRemark] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [canvasPreview, setCanvasPreview] = useState<string | null>(null);
 
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!file || !previewUrl) return;
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const rad = (rotation * Math.PI) / 180;
-      const w = rotation % 180 === 0 ? img.width : img.height;
-      const h = rotation % 180 === 0 ? img.height : img.width;
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
-      ctx.translate(w / 2, h / 2);
-      ctx.rotate(rad);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      setCanvasPreview(canvas.toDataURL(file.type));
-    };
-    img.src = previewUrl;
-  }, [file, previewUrl, rotation]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const reset = () => {
-    setFile(null);
-    setPreviewUrl(null);
-    setRotation(0);
+    photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+    setPhotos([]);
     setMealType(1);
     setTakenAt('');
     setTakenAtLocked(false);
     setRemark('');
+    setUploadError('');
   };
 
   const handleClose = () => {
@@ -79,15 +63,12 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     onOpenChange(false);
   };
 
-  // 讀取 EXIF（簡易版，只抓 DateTimeOriginal）
   const readExifDate = (f: File): Promise<string | null> => {
     return new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = e => {
         try {
           const buf = e.target?.result as ArrayBuffer;
-          const view = new DataView(buf);
-          // 找 EXIF DateTimeOriginal 字串
           const str = new TextDecoder('ascii', { fatal: false }).decode(buf);
           const match = str.match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
           if (match) {
@@ -104,52 +85,11 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     });
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setFile(f);
-    setRotation(0);
-    setPreviewUrl(URL.createObjectURL(f));
-
-    const exif = await readExifDate(f);
-    if (exif) {
-      setTakenAt(exif);
-      setTakenAtLocked(true);
-    } else {
-      setTakenAtLocked(false);
-    }
-  };
-
-  const rotate = (dir: 'cw' | 'ccw') => {
-    setRotation(r => (r + (dir === 'cw' ? 90 : -90) + 360) % 360);
-  };
-
-  const handleMealTypeChange = (val: number) => {
-    setMealType(val);
-    if (!takenAtLocked) {
-      const opt = MEAL_TYPE_OPTIONS.find(o => o.value === val);
-      if (opt) {
-        const now = new Date();
-        if (opt.defaultHour !== null) {
-          now.setHours(opt.defaultHour, 0, 0, 0);
-        }
-        setTakenAt(toDatetimeLocal(now));
-      }
-    }
-  };
-
-  const handleTakenAtChange = (val: string) => {
-    setTakenAt(val);
-    setTakenAtLocked(true);
-  };
-
-  // Canvas 旋轉後輸出 Blob
-  const getRotatedBlob = useCallback((): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      if (!file || !previewUrl) return reject('No file');
+  const renderCanvasPreview = (file: File, previewUrl: string, rotation: number): Promise<string> => {
+    return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
-        const canvas = canvasRef.current!;
+        const canvas = document.createElement('canvas');
         const rad = (rotation * Math.PI) / 180;
         const w = rotation % 180 === 0 ? img.width : img.height;
         const h = rotation % 180 === 0 ? img.height : img.width;
@@ -159,21 +99,107 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
         ctx.translate(w / 2, h / 2);
         ctx.rotate(rad);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        canvas.toBlob(blob => blob ? resolve(blob) : reject('toBlob failed'), file.type);
+        resolve(canvas.toDataURL(file.type));
       };
       img.src = previewUrl;
     });
-  }, [file, previewUrl, rotation]);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    // 第一張照片嘗試讀 EXIF
+    if (photos.length === 0) {
+      const exif = await readExifDate(files[0]);
+      if (exif) {
+        setTakenAt(exif);
+        setTakenAtLocked(true);
+      } else {
+        setTakenAtLocked(false);
+      }
+    }
+
+    const newEntries: PhotoEntry[] = await Promise.all(
+      files.map(async file => {
+        const previewUrl = URL.createObjectURL(file);
+        const canvasPreview = await renderCanvasPreview(file, previewUrl, 0);
+        return { file, previewUrl, rotation: 0, canvasPreview };
+      })
+    );
+
+    setPhotos(prev => [...prev, ...newEntries]);
+    // 清空 input 讓同一張照片可以重複選
+    e.target.value = '';
+  };
+
+  const rotate = async (index: number, dir: 'cw' | 'ccw') => {
+    setPhotos(prev => prev.map((p, i) => {
+      if (i !== index) return p;
+      const newRotation = (p.rotation + (dir === 'cw' ? 90 : -90) + 360) % 360;
+      // 先更新 rotation，canvas preview 非同步更新
+      return { ...p, rotation: newRotation };
+    }));
+
+    // 更新 canvas preview
+    const entry = photos[index];
+    const newRotation = (entry.rotation + (dir === 'cw' ? 90 : -90) + 360) % 360;
+    const canvasPreview = await renderCanvasPreview(entry.file, entry.previewUrl, newRotation);
+    setPhotos(prev => prev.map((p, i) => i === index ? { ...p, canvasPreview } : p));
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleMealTypeChange = (val: number) => {
+    setMealType(val);
+    if (!takenAtLocked) {
+      const opt = MEAL_TYPE_OPTIONS.find(o => o.value === val);
+      if (opt) {
+        const now = new Date();
+        if (opt.defaultHour !== null) now.setHours(opt.defaultHour, 0, 0, 0);
+        setTakenAt(toDatetimeLocal(now));
+      }
+    }
+  };
+
+  const getRotatedBlob = useCallback((entry: PhotoEntry): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current!;
+        const rad = (entry.rotation * Math.PI) / 180;
+        const w = entry.rotation % 180 === 0 ? img.width : img.height;
+        const h = entry.rotation % 180 === 0 ? img.height : img.width;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(rad);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject('toBlob failed'), entry.file.type);
+      };
+      img.src = entry.previewUrl;
+    });
+  }, []);
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!photos.length) return;
     setUploading(true);
     setUploadError('');
-    
+
     try {
-      const blob = rotation !== 0 ? await getRotatedBlob() : file;
       const formData = new FormData();
-      formData.append('photo', blob, file.name);
+
+      for (const entry of photos) {
+        const blob = entry.rotation !== 0 ? await getRotatedBlob(entry) : entry.file;
+        formData.append('photos[]', blob, entry.file.name);
+      }
+
       formData.append('meal_type', String(mealType));
       if (takenAt) formData.append('taken_at', takenAt);
       if (remark) formData.append('remark', remark);
@@ -186,11 +212,11 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       handleClose();
       onUploaded();
     } catch (err: unknown) {
-        const msg =
-          (err as { response?: { data?: { message?: string } } })
-            ?.response?.data?.message ?? 'Upload failed';
-        setUploadError(msg);
-      } finally {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message ?? 'Upload failed';
+      setUploadError(msg);
+    } finally {
       setUploading(false);
     }
   };
@@ -207,51 +233,65 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
 
         <div className="flex flex-col gap-5 mt-2">
 
-          {/* 照片上傳區 */}
+          {/* 照片列表 */}
+          {photos.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {photos.map((entry, index) => (
+                <div key={index} className="flex items-center gap-3 p-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)]">
+                  {/* 縮圖 */}
+                  <img
+                    src={entry.canvasPreview ?? entry.previewUrl}
+                    alt={`photo ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                  />
+                  {/* 旋轉工具 */}
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <span className="text-xs text-[var(--text-muted)]">Rotate</span>
+                    <button
+                      onClick={() => rotate(index, 'ccw')}
+                      className="p-1.5 rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] transition-colors"
+                    >
+                      <RotateCcw size={13} />
+                    </button>
+                    <button
+                      onClick={() => rotate(index, 'cw')}
+                      className="p-1.5 rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] transition-colors"
+                    >
+                      <RotateCw size={13} />
+                    </button>
+                  </div>
+                  {/* 移除 */}
+                  <button
+                    onClick={() => removePhoto(index)}
+                    className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 新增照片按鈕 */}
           <div
-            className="relative border-2 border-dashed border-[var(--border)] rounded-lg overflow-hidden cursor-pointer hover:border-[var(--accent)] transition-colors"
-            style={{ minHeight: 200 }}
+            className="border-2 border-dashed border-[var(--border)] rounded-lg cursor-pointer hover:border-[var(--accent)] transition-colors"
             onClick={() => inputRef.current?.click()}
           >
-            {canvasPreview ? (
-              <img
-                src={canvasPreview}
-                alt="preview"
-                className="w-full object-contain max-h-64"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-48 gap-2 text-[var(--text-muted)]">
-                <Upload size={28} strokeWidth={1.5} />
-                <p className="text-sm">Click to select a photo</p>
-              </div>
-            )}
+            <div className="flex flex-col items-center justify-center h-24 gap-2 text-[var(--text-muted)]">
+              <Upload size={22} strokeWidth={1.5} />
+              <p className="text-sm">
+                {photos.length === 0 ? 'Click to select photos' : 'Add more photos'}
+              </p>
+            </div>
             <input
               ref={inputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handleFileChange}
             />
           </div>
-
-          {/* 旋轉工具 — 有圖才顯示 */}
-          {previewUrl && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">Rotate</span>
-              <button
-                onClick={() => rotate('ccw')}
-                className="p-2 rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
-              >
-                <RotateCcw size={15} />
-              </button>
-              <button
-                onClick={() => rotate('cw')}
-                className="p-2 rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
-              >
-                <RotateCw size={15} />
-              </button>
-            </div>
-          )}
 
           {/* 餐別 */}
           <div>
@@ -283,7 +323,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             <input
               type="datetime-local"
               value={takenAt}
-              onChange={e => handleTakenAtChange(e.target.value)}
+              onChange={e => { setTakenAt(e.target.value); setTakenAtLocked(true); }}
               className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
             />
           </div>
@@ -299,6 +339,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
               className="w-full text-sm px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
             />
           </div>
+
           {/* 錯誤訊息 */}
           {uploadError && (
             <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-md">
@@ -306,18 +347,16 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             </p>
           )}
 
-
           {/* 上傳按鈕 */}
           <button
             onClick={handleUpload}
-            disabled={!file || uploading}
+            disabled={!photos.length || uploading}
             className="w-full py-2.5 text-sm font-medium rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? 'Uploading…' : 'Upload'}
+            {uploading ? 'Uploading…' : `Upload${photos.length > 1 ? ` (${photos.length} photos)` : ''}`}
           </button>
         </div>
 
-        {/* 隱藏 canvas for 旋轉輸出 */}
         <canvas ref={canvasRef} className="hidden" />
       </DialogContent>
     </Dialog>
