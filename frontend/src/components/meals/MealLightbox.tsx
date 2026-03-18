@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -69,6 +69,21 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, [meal, currentIndex]);
+
+    const touchStartX = useRef<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartX.current === null) return;
+        const diff = touchStartX.current - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            diff > 0 ? nextPhoto() : prevPhoto();
+        }
+        touchStartX.current = null;
+    };
 
     if (!meal) return null;
 
@@ -142,6 +157,8 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                     <div
                         className="relative w-full md:w-[65%] bg-black flex items-center justify-center"
                         style={{ minHeight: '30vw', maxHeight: '80vh' }}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
                     >
                         {currentPhoto && (
                             <img
