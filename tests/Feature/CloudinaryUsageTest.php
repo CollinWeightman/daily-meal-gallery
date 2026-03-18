@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 it('returns cloudinary usage data', function () {
     Http::fake([

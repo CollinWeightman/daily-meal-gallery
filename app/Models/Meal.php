@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Meal extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'cloudinary_public_id',
         'meal_type',
         'remark',
         'taken_at',
@@ -32,5 +32,10 @@ class Meal extends Model
             4 => 'snack',
             default => 'unknown',
         };
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(MealPhoto::class)->orderBy('sort_order');
     }
 }

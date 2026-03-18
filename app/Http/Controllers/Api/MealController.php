@@ -18,27 +18,28 @@ class MealController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Meal::query();
-
+        $query = Meal::with('photos');  // 加這行
+    
         if ($request->has('meal_type')) {
             $query->where('meal_type', $request->meal_type);
         }
-
+    
         if ($request->has('year')) {
             $query->whereYear('taken_at', $request->year);
         }
-
+    
         if ($request->has('month') && $request->has('year')) {
             $query->whereMonth('taken_at', $request->month);
         }
-
+    
         $query->orderBy('taken_at', 'desc')
               ->orderBy('created_at', 'desc');
-
+    
         $meals = $query->paginate($request->per_page ?? 20);
-
+    
         return MealResource::collection($meals);
     }
+    
 
 
     /**
@@ -46,24 +47,30 @@ class MealController extends Controller
      */
     public function store(StoreMealRequest $request, CloudinaryService $cloudinary)
     {
-        $publicId = $cloudinary->upload($request->file('photo'));
-    
         $meal = Meal::create([
-            'cloudinary_public_id' => $publicId,
             'meal_type' => $request->meal_type,
-            'remark' => $request->remark,
-            'taken_at' => $request->taken_at ?? now(),
+            'remark'    => $request->remark,
+            'taken_at'  => $request->taken_at ?? now(),
         ]);
     
-        return (new MealResource($meal))->response()->setStatusCode(201);
+        foreach ($request->file('photos') as $index => $photo) {
+            $publicId = $cloudinary->upload($photo);
+            $meal->photos()->create([
+                'cloudinary_public_id' => $publicId,
+                'sort_order'           => $index,
+            ]);
+        }
+    
+        return (new MealResource($meal->load('photos')))->response()->setStatusCode(201);
     }
+    
 
     /**
      * Display the specified resource.
      */
     public function show(Meal $meal)
     {
-        return new MealResource($meal);
+        return new MealResource($meal->load('photos'));
     }
 
 
@@ -82,8 +89,11 @@ class MealController extends Controller
      */
     public function destroy(Meal $meal, CloudinaryService $cloudinary)
     {
-        $cloudinary->delete($meal->cloudinary_public_id);
-        $meal->delete();
+        foreach ($meal->photos as $photo) {
+            $cloudinary->delete($photo->cloudinary_public_id);
+        }
+    
+        $meal->delete(); // CASCADE 會自動清除 meal_photos
         return response()->noContent();
     }
 
