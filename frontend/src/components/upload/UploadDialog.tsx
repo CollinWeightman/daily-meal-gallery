@@ -47,6 +47,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
 
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const MAX_SIZE = 1920;
 
   const reset = () => {
     photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
@@ -173,15 +174,35 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       img.onload = () => {
         const canvas = canvasRef.current!;
         const rad = (entry.rotation * Math.PI) / 180;
-        const w = entry.rotation % 180 === 0 ? img.width : img.height;
-        const h = entry.rotation % 180 === 0 ? img.height : img.width;
+  
+        // 先計算旋轉後的原始尺寸
+        let w = entry.rotation % 180 === 0 ? img.width : img.height;
+        let h = entry.rotation % 180 === 0 ? img.height : img.width;
+  
+        // 縮放到最大 1920px
+        if (w > MAX_SIZE || h > MAX_SIZE) {
+          const ratio = Math.min(MAX_SIZE / w, MAX_SIZE / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+  
         canvas.width = w;
         canvas.height = h;
+  
         const ctx = canvas.getContext('2d')!;
         ctx.translate(w / 2, h / 2);
         ctx.rotate(rad);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        canvas.toBlob(blob => blob ? resolve(blob) : reject('toBlob failed'), 'image/jpeg', 0.92);
+  
+        // 旋轉後 drawImage 要用縮放後的尺寸
+        const drawW = entry.rotation % 180 === 0 ? w : h;
+        const drawH = entry.rotation % 180 === 0 ? h : w;
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  
+        canvas.toBlob(
+          blob => blob ? resolve(blob) : reject('toBlob failed'),
+          'image/jpeg',
+          0.85
+        );
       };
       img.src = entry.previewUrl;
     });
