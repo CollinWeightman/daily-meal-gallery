@@ -213,10 +213,9 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       handleClose();
       onUploaded();
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })
-          ?.response?.data?.message ?? 'Upload failed';
-      setUploadError(msg);
+      const response = (err as { response?: { data?: unknown; status?: number } })?.response;
+      const msg = JSON.stringify(response?.data) ?? 'Upload failed';
+      setUploadError(`${response?.status}: ${msg}`);
     } finally {
       setUploading(false);
     }
