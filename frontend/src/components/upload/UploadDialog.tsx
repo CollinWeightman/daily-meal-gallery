@@ -181,7 +181,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
         ctx.translate(w / 2, h / 2);
         ctx.rotate(rad);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        canvas.toBlob(blob => blob ? resolve(blob) : reject('toBlob failed'), entry.file.type);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject('toBlob failed'), 'image/jpeg', 0.92);
       };
       img.src = entry.previewUrl;
     });
@@ -196,8 +196,9 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       const formData = new FormData();
 
       for (const entry of photos) {
-        const blob = entry.rotation !== 0 ? await getRotatedBlob(entry) : entry.file;
-        formData.append('photos[]', blob, entry.file.name);
+        const blob = await getRotatedBlob(entry);
+        const filename = entry.file.name.replace(/\.[^.]+$/, '.jpg');
+        formData.append('photos[]', blob, filename);
       }
 
       formData.append('meal_type', String(mealType));
