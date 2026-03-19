@@ -234,10 +234,9 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       handleClose();
       onUploaded();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: unknown; status?: number }; message?: string; code?: string };
-      const msg = axiosErr?.response 
-        ? `${axiosErr.response.status}: ${JSON.stringify(axiosErr.response.data)}`
-        : `Network: ${axiosErr?.code} / ${axiosErr?.message}`;
+      const msg =
+        (err as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message ?? 'Upload failed';
       setUploadError(msg);
     }
     finally {

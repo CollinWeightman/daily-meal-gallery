@@ -22,7 +22,7 @@ class StoreMealRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photos'          => 'required|array|min:1|max:10',
+            'photos'          => 'required|array|min:1|max:5',
             'photos.*'        => 'image|max:5120',
             'meal_type'       => 'required|integer|in:1,2,3,4',
             'remark'          => 'nullable|string|max:500',
