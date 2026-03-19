@@ -10,6 +10,7 @@ use App\Http\Requests\StoreMealRequest;
 use App\Services\CloudinaryService;
 use App\Http\Requests\UpdateMealRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class MealController extends Controller
 {
@@ -18,24 +19,28 @@ class MealController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Meal::with('photos');  // 加這行
+        $cacheKey = 'meals:' . md5($request->getQueryString() ?? 'all');
     
-        if ($request->has('meal_type')) {
-            $query->where('meal_type', $request->meal_type);
-        }
+        $meals = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request) {
+            $query = Meal::with('photos');
     
-        if ($request->has('year')) {
-            $query->whereYear('taken_at', $request->year);
-        }
+            if ($request->has('meal_type')) {
+                $query->where('meal_type', $request->meal_type);
+            }
     
-        if ($request->has('month') && $request->has('year')) {
-            $query->whereMonth('taken_at', $request->month);
-        }
+            if ($request->has('year')) {
+                $query->whereYear('taken_at', $request->year);
+            }
     
-        $query->orderBy('taken_at', 'desc')
-              ->orderBy('created_at', 'desc');
+            if ($request->has('month') && $request->has('year')) {
+                $query->whereMonth('taken_at', $request->month);
+            }
     
-        $meals = $query->paginate($request->per_page ?? 20);
+            $query->orderBy('taken_at', 'desc')
+                  ->orderBy('created_at', 'desc');
+    
+            return $query->paginate($request->per_page ?? 20);
+        });
     
         return MealResource::collection($meals);
     }
@@ -60,6 +65,8 @@ class MealController extends Controller
                 'sort_order'           => $index,
             ]);
         }
+    
+        Cache::flush();
     
         return (new MealResource($meal->load('photos')))->response()->setStatusCode(201);
     }
@@ -94,6 +101,9 @@ class MealController extends Controller
         }
     
         $meal->delete(); // CASCADE 會自動清除 meal_photos
+
+        Cache::flush();
+
         return response()->noContent();
     }
 
