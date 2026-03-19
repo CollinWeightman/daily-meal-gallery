@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: 'http://localhost/api',
+  baseURL: import.meta.env.VITE_API_URL + '/api',
 });
 
 // Request interceptor — 帶 Bearer token

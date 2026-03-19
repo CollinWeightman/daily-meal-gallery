@@ -45,7 +45,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               required
               autoComplete="email"
-              placeholder="admin@dmg.com"
+              placeholder="admin@example.com"
               className="w-full text-sm px-3 py-2.5 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
