@@ -23,7 +23,7 @@ class StoreMealRequest extends FormRequest
     {
         return [
             'photos'          => 'required|array|min:1|max:10',
-            'photos.*'        => 'image|max:10240',
+            'photos.*'        => 'image|max:5120',
             'meal_type'       => 'required|integer|in:1,2,3,4',
             'remark'          => 'nullable|string|max:500',
             'taken_at'        => 'nullable|date',
