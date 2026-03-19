@@ -87,7 +87,7 @@ class MealController extends Controller
     public function update(UpdateMealRequest $request, Meal $meal): MealResource
     {
         $meal->update($request->validated());
-    
+        Cache::flush();
         return new MealResource($meal->fresh());
     }
 
