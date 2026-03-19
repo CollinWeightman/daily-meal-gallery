@@ -65,7 +65,7 @@ class MealController extends Controller
                 'sort_order'           => $index,
             ]);
         }
-    
+
         Cache::flush();
     
         return (new MealResource($meal->load('photos')))->response()->setStatusCode(201);
@@ -87,8 +87,10 @@ class MealController extends Controller
     public function update(UpdateMealRequest $request, Meal $meal): MealResource
     {
         $meal->update($request->validated());
+
         Cache::flush();
-        return new MealResource($meal->fresh());
+
+        return new MealResource($meal->load('photos'));
     }
 
     /**
@@ -103,7 +105,7 @@ class MealController extends Controller
         $meal->delete(); // CASCADE 會自動清除 meal_photos
 
         Cache::flush();
-
+        
         return response()->noContent();
     }
 
