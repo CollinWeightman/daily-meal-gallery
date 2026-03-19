@@ -248,13 +248,13 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
         aria-describedby={undefined}
-        className="max-w-lg w-[95vw] bg-[var(--bg-elevated)] border-[var(--border)]"
+        className="max-w-lg w-[95vw] bg-[var(--bg-elevated)] border-[var(--border)] max-h-[90vh] flex flex-col"
       >
         <DialogHeader>
           <DialogTitle className="font-display text-[var(--text-primary)]">Upload Meal</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-5 mt-2">
+        <div className="flex flex-col gap-5 mt-2 overflow-y-auto flex-1 pr-1">
 
           {/* 照片列表 */}
           {photos.length > 0 && (
