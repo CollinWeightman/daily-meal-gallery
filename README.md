@@ -13,7 +13,7 @@ A photo diary for logging daily meals, built with Laravel 11 + React + PostgreSQ
 
 ## Getting Started
 ```bash
-git clone https://github.com/your-account/daily-meal-gallery.git
+git clone https://github.com/CollinWeightman/daily-meal-gallery.git
 cd daily-meal-gallery
 cp .env.example .env
 ./vendor/bin/sail up -d
