@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Meal } from '@/types/meal';
 import { useMeals } from '@/hooks/useMeals';
 import { useAvailableFilters } from '@/hooks/useAvailableFilters';
 import { MealGrid } from '@/components/meals/MealGrid';
 import { MealLightbox } from '@/components/meals/MealLightbox';
+import ColdStartNotice from '@/components/ui/ColdStartNotice';
 
 const MEAL_TYPES = [
     { value: 0, label: 'All' },
@@ -31,7 +32,7 @@ interface HomePageProps {
         month,
     };
 
-    const { meals, loading, initialLoading, hasMore, loadMore, refresh } = useMeals(filters);
+    const { meals, loading, initialLoading, hasMore, loadMore, refresh, error } = useMeals(filters);
 
     useEffect(() => {
       if (refreshKey > 0) refresh();
@@ -59,6 +60,20 @@ interface HomePageProps {
       }, []);
 
 
+    const [showColdStart, setShowColdStart] = useState(false);
+    const coldStartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+    if (initialLoading) {
+        coldStartTimer.current = setTimeout(() => setShowColdStart(true), 3000);
+    } else {
+        if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
+        setShowColdStart(false);
+    }
+    return () => {
+        if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
+    };
+    }, [initialLoading]);
       
     return (
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -115,15 +130,19 @@ interface HomePageProps {
             </div>
 
             {/* 照片網格 */}
-            <MealGrid
-                meals={meals}
-                loading={loading}
-                initialLoading={initialLoading}
-                hasMore={hasMore}
-                hasFilters={hasFilters}
-                onLoadMore={loadMore}
-                onMealClick={handleMealClick}
-            />
+            {showColdStart || error ? (
+            <ColdStartNotice />
+            ) : (
+                <MealGrid
+                    meals={meals}
+                    loading={loading}
+                    initialLoading={initialLoading}
+                    hasMore={hasMore}
+                    hasFilters={hasFilters}
+                    onLoadMore={loadMore}
+                    onMealClick={handleMealClick}
+                />
+            )}
             <MealLightbox
                 meal={selectedMeal}
                 onClose={() => setSelectedMeal(null)}
