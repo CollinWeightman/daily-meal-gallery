@@ -8,7 +8,8 @@ export function useMeals(filters: MealFilters) {
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [refreshKey, setRefreshKey] = useState(0); // 新增
+    const [error, setError] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
     const filtersRef = useRef(filters);
 
     useEffect(() => {
@@ -17,6 +18,7 @@ export function useMeals(filters: MealFilters) {
         setPage(1);
         setHasMore(true);
         setInitialLoading(true);
+        setError(false);
     }, [filters.meal_type, filters.year, filters.month]);
 
     const fetchPage = useCallback(async (pageNum: number) => {
@@ -35,6 +37,7 @@ export function useMeals(filters: MealFilters) {
             setHasMore(meta.current_page < meta.last_page);
         } catch {
             setHasMore(false);
+            setError(true);
         } finally {
             setLoading(false);
             setInitialLoading(false);
@@ -43,7 +46,7 @@ export function useMeals(filters: MealFilters) {
 
     useEffect(() => {
         fetchPage(page);
-    }, [page, fetchPage, filters.meal_type, filters.year, filters.month, refreshKey]); // 加入 refreshKey
+    }, [page, fetchPage, filters.meal_type, filters.year, filters.month, refreshKey]);
 
     const loadMore = useCallback(() => {
         if (!loading && hasMore) setPage(p => p + 1);
@@ -54,8 +57,9 @@ export function useMeals(filters: MealFilters) {
         setPage(1);
         setHasMore(true);
         setInitialLoading(true);
-        setRefreshKey(k => k + 1); // 直接觸發 useEffect，不再手動呼叫 fetchPage
+        setError(false);
+        setRefreshKey(k => k + 1);
     }, []);
 
-    return { meals, loading, initialLoading, hasMore, loadMore, refresh };
+    return { meals, loading, initialLoading, hasMore, loadMore, refresh, error };
 }
