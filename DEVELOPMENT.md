@@ -1,5 +1,26 @@
 # Development Notes
 
+## Local Setup
+
+### Backend
+```bash
+cd daily-meal-gallery
+sail up -d
+sail artisan migrate --seed
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+cp .env.example .env.local  # 再填入 VITE_API_URL=http://localhost
+npm run dev
+```
+
+Frontend dev server 固定在 `http://localhost:5174`。
+
+---
+
 ## Manual Integration Testing
 
 ### Get auth token
