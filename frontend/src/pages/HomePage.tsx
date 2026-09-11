@@ -64,7 +64,7 @@ export default function HomePage({ setUploadOpen: _setUploadOpen, refreshKey }: 
 
     useEffect(() => {
         if (initialLoading && errorType === 'none') {
-            coldStartTimer.current = setTimeout(() => setShowColdStart(true), 100);
+            coldStartTimer.current = setTimeout(() => setShowColdStart(true), 12000);
         } else {
             if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
             setShowColdStart(false);

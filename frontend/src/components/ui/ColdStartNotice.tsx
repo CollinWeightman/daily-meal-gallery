@@ -34,7 +34,7 @@ export default function ColdStartNotice({ variant = 'waking', onRetry }: ColdSta
               <h2 className="text-xl font-semibold mb-2">Waking up the server...</h2>
               <p className="text-sm text-[var(--text-muted)] max-w-xs">
                   The backend is hosted on a free tier and sleeps when idle.
-                  First load usually takes 30–60 seconds — thanks for your patience!
+                  First load usually takes 30–60 seconds, thanks for your patience!
               </p>
           </div>
           <div className="flex gap-1.5">
