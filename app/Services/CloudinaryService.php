@@ -49,7 +49,6 @@ class CloudinaryService
      * 取得照片 URL
      * 
      * @param string $publicId
-     * @param array $transforms
      * @return string
      */
     public function getUrl(string $publicId): string
