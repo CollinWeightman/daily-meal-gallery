@@ -63,6 +63,14 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     useEffect(() => {
         if (!meal) return;
         const handleKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            const isEditableTarget =
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.isContentEditable;
+    
+            if (isEditableTarget) return;
+    
             if (e.key === 'ArrowLeft') prevPhoto();
             if (e.key === 'ArrowRight') nextPhoto();
         };
