@@ -21,6 +21,12 @@ function toDatetimeLocal(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+// 共用：算出「旋轉後」的畫布尺寸（90/270 度時寬高互換）
+// 這個函式也拿來反推「旋轉前該用多大的尺寸畫上去」，見下方兩處呼叫。
+function getRotatedDrawBox(width: number, height: number, rotation: number): { w: number; h: number } {
+  return rotation % 180 === 0 ? { w: width, h: height } : { w: height, h: width };
+}
+
 interface PhotoEntry {
   file: File;
   previewUrl: string;
@@ -48,6 +54,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const MAX_SIZE = 1920;
+  const THUMBNAIL_SIZE = 200; // 列表縮圖上限，避免整張原圖進 base64
 
   const reset = () => {
     photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
@@ -86,20 +93,31 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     });
   };
 
+  // 列表縮圖：限制在 THUMBNAIL_SIZE 內，不再整張原圖畫進 canvas
   const renderCanvasPreview = (file: File, previewUrl: string, rotation: number): Promise<string> => {
     return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const rad = (rotation * Math.PI) / 180;
-        const w = rotation % 180 === 0 ? img.width : img.height;
-        const h = rotation % 180 === 0 ? img.height : img.width;
+
+        let { w, h } = getRotatedDrawBox(img.width, img.height, rotation);
+
+        if (w > THUMBNAIL_SIZE || h > THUMBNAIL_SIZE) {
+          const ratio = Math.min(THUMBNAIL_SIZE / w, THUMBNAIL_SIZE / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d')!;
         ctx.translate(w / 2, h / 2);
         ctx.rotate(rad);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        const { w: drawW, h: drawH } = getRotatedDrawBox(w, h, rotation);
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+
         resolve(canvas.toDataURL(file.type));
       };
       img.src = previewUrl;
@@ -134,19 +152,22 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     e.target.value = '';
   };
 
+
   const rotate = async (index: number, dir: 'cw' | 'ccw') => {
+    const captured: { entry: PhotoEntry | null; rotation: number } = { entry: null, rotation: 0 };
+
     setPhotos(prev => prev.map((p, i) => {
       if (i !== index) return p;
-      const newRotation = (p.rotation + (dir === 'cw' ? 90 : -90) + 360) % 360;
-      // 先更新 rotation，canvas preview 非同步更新
-      return { ...p, rotation: newRotation };
+      captured.rotation = (p.rotation + (dir === 'cw' ? 90 : -90) + 360) % 360;
+      captured.entry = p;
+      return { ...p, rotation: captured.rotation };
     }));
 
-    // 更新 canvas preview
-    const entry = photos[index];
-    const newRotation = (entry.rotation + (dir === 'cw' ? 90 : -90) + 360) % 360;
-    const canvasPreview = await renderCanvasPreview(entry.file, entry.previewUrl, newRotation);
-    setPhotos(prev => prev.map((p, i) => i === index ? { ...p, canvasPreview } : p));
+    const { entry, rotation } = captured;
+    if (!entry) return;
+
+    const canvasPreview = await renderCanvasPreview(entry.file, entry.previewUrl, rotation);
+    setPhotos(prev => prev.map((p, i) => (i === index ? { ...p, canvasPreview } : p)));
   };
 
   const removePhoto = (index: number) => {
@@ -168,36 +189,33 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
     }
   };
 
-  const getRotatedBlob = useCallback((entry: PhotoEntry): Promise<Blob> => {
+  // 原名 getRotatedBlob：實際做旋轉 + 縮放到 1920px + 重新編碼成 JPEG 三件事，改名反映輸出結果
+  const getProcessedJpegBlob = useCallback((entry: PhotoEntry): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         const canvas = canvasRef.current!;
         const rad = (entry.rotation * Math.PI) / 180;
-  
-        // 先計算旋轉後的原始尺寸
-        let w = entry.rotation % 180 === 0 ? img.width : img.height;
-        let h = entry.rotation % 180 === 0 ? img.height : img.width;
-  
+
+        let { w, h } = getRotatedDrawBox(img.width, img.height, entry.rotation);
+
         // 縮放到最大 1920px
         if (w > MAX_SIZE || h > MAX_SIZE) {
           const ratio = Math.min(MAX_SIZE / w, MAX_SIZE / h);
           w = Math.round(w * ratio);
           h = Math.round(h * ratio);
         }
-  
+
         canvas.width = w;
         canvas.height = h;
-  
+
         const ctx = canvas.getContext('2d')!;
         ctx.translate(w / 2, h / 2);
         ctx.rotate(rad);
-  
-        // 旋轉後 drawImage 要用縮放後的尺寸
-        const drawW = entry.rotation % 180 === 0 ? w : h;
-        const drawH = entry.rotation % 180 === 0 ? h : w;
+
+        const { w: drawW, h: drawH } = getRotatedDrawBox(w, h, entry.rotation);
         ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-  
+
         canvas.toBlob(
           blob => blob ? resolve(blob) : reject('toBlob failed'),
           'image/jpeg',
@@ -217,7 +235,7 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
       const formData = new FormData();
 
       for (const entry of photos) {
-        const blob = await getRotatedBlob(entry);
+        const blob = await getProcessedJpegBlob(entry);
         const filename = entry.file.name.replace(/\.[^.]+$/, '.jpg');
         formData.append('photos[]', blob, filename);
       }
@@ -261,13 +279,11 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             <div className="flex flex-col gap-3">
               {photos.map((entry, index) => (
                 <div key={index} className="flex items-center gap-3 p-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)]">
-                  {/* 縮圖 */}
                   <img
                     src={entry.canvasPreview ?? entry.previewUrl}
                     alt={`photo ${index + 1}`}
                     className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                   />
-                  {/* 旋轉工具 */}
                   <div className="flex items-center gap-1.5 flex-1">
                     <span className="text-xs text-[var(--text-muted)]">Rotate</span>
                     <button
@@ -283,7 +299,6 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
                       <RotateCw size={13} />
                     </button>
                   </div>
-                  {/* 移除 */}
                   <button
                     onClick={() => removePhoto(index)}
                     className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
@@ -295,7 +310,6 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             </div>
           )}
 
-          {/* 新增照片按鈕 */}
           <div
             className="border-2 border-dashed border-[var(--border)] rounded-lg cursor-pointer hover:border-[var(--accent)] transition-colors"
             onClick={() => inputRef.current?.click()}
@@ -316,7 +330,6 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             />
           </div>
 
-          {/* 餐別 */}
           <div>
             <p className="text-xs text-[var(--text-muted)] mb-2">Meal Type</p>
             <div className="flex flex-wrap gap-1.5">
@@ -337,7 +350,6 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             </div>
           </div>
 
-          {/* 拍照時間 */}
           <div>
             <p className="text-xs text-[var(--text-muted)] mb-1.5">
               Date & Time
@@ -351,7 +363,6 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             />
           </div>
 
-          {/* 備註 */}
           <div>
             <p className="text-xs text-[var(--text-muted)] mb-1.5">Remark <span className="opacity-50">(optional)</span></p>
             <textarea
@@ -363,14 +374,12 @@ export function UploadDialog({ open, onOpenChange, onUploaded }: UploadDialogPro
             />
           </div>
 
-          {/* 錯誤訊息 */}
           {uploadError && (
             <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-md">
               {uploadError}
             </p>
           )}
 
-          {/* 上傳按鈕 */}
           <button
             onClick={handleUpload}
             disabled={!photos.length || uploading}
