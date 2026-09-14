@@ -15,16 +15,22 @@ class CloudinaryService
      */
     public function upload(UploadedFile $file): string
     {
+        [$originalWidth, $originalHeight] = getimagesize($file->getRealPath());
+    
+        // the shorter side fix to 800 px
+        $dimensionConstraint = $originalWidth <= $originalHeight
+            ? ['width' => 800]
+            : ['height' => 800];
+    
         $result = app(\Cloudinary\Cloudinary::class)
             ->uploadApi()
             ->upload($file->getRealPath(), [
                 'folder' => 'daily-meals',
-                'transformation' => [
-                    'width' => 800,
+                'transformation' => array_merge($dimensionConstraint, [
                     'crop' => 'limit',
                     'fetch_format' => 'auto',
                     'quality' => 'auto',
-                ],
+                ]),
             ]);
     
         return $result['public_id'];
