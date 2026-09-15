@@ -8,6 +8,20 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class CloudinaryService
 {
     /**
+     * 決定要限制寬還是高，讓短邊固定 800px，長邊依比例縮放
+     *
+     * @param int $width
+     * @param int $height
+     * @return array
+     */
+    public function shortSideDimensionConstraint(int $width, int $height): array
+    {
+        return $width <= $height
+            ? ['width' => 800]
+            : ['height' => 800];
+    }
+
+    /**
      * 上傳照片到 Cloudinary
      * 
      * @param UploadedFile $file
@@ -16,12 +30,9 @@ class CloudinaryService
     public function upload(UploadedFile $file): string
     {
         [$originalWidth, $originalHeight] = getimagesize($file->getRealPath());
-    
-        // the shorter side fix to 800 px
-        $dimensionConstraint = $originalWidth <= $originalHeight
-            ? ['width' => 800]
-            : ['height' => 800];
-    
+
+        $dimensionConstraint = $this->shortSideDimensionConstraint($originalWidth, $originalHeight);
+
         $result = app(\Cloudinary\Cloudinary::class)
             ->uploadApi()
             ->upload($file->getRealPath(), [
@@ -32,7 +43,7 @@ class CloudinaryService
                     'quality' => 'auto',
                 ]),
             ]);
-    
+
         return $result['public_id'];
     }
 
