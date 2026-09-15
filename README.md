@@ -27,6 +27,7 @@ For frontend setup and manual testing, see [DEVELOPMENT.md](DEVELOPMENT.md).
 wsl -d Ubuntu
 cd ~/workplace/daily-meal-gallery
 ./vendor/bin/sail up -d
+cd frontend && npm run dev
 ```
 
 ## Run Tests
@@ -50,12 +51,14 @@ code .      # VSCode
 
 ## Deployment
 
-| Service  | Platform | URL |
-|----------|----------|-----|
-| Frontend | Vercel   | https://daily-meal-gallery.vercel.app |
-| Backend  | Render   | https://daily-meal-gallery.onrender.com |
+| Service  | Platform  | URL |
+|----------|-----------|-----|
+| Frontend | Vercel    | https://daily-meal-gallery.vercel.app |
+| Backend  | Render    | https://daily-meal-gallery.onrender.com |
+| Database | Supabase  | - |
+| Images   | Cloudinary | - |
 
-Backend is hosted on Render free tier and will sleep after 15 minutes of inactivity. First request may take 30–60 seconds.
+Backend is hosted on Render free tier and will sleep after 15 minutes of inactivity. First request may take 30–60 seconds. The database is hosted on Supabase free tier and pauses after 7 days of inactivity. If you see a database error on first load, it may take a bit longer to resume. The app will show a notice if either is slow to respond.
 
 ## Documentation
 

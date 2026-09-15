@@ -81,12 +81,12 @@ Upload a new meal with one or more photos.
 
 **Request** `multipart/form-data`
 
-| Field      | Type             | Required | Description               |
-|------------|------------------|----------|---------------------------|
-| photos[]   | file (image)     | Yes      | 1–5 photos, max 5MB each  |
-| meal_type  | integer          | Yes      | 1–4                       |
-| remark     | string           | No       |                           |
-| taken_at   | datetime         | No       | ISO 8601                  |
+| Field      | Type                  | Required | Description               |
+|------------|-----------------------|----------|---------------------------|
+| photos[]   | file (jpeg/png/webp)  | Yes      | 1–5 photos, max 5MB each  |
+| meal_type  | integer               | Yes      | 1–4                       |
+| remark     | string                | No       |                           |
+| taken_at   | datetime              | No       | ISO 8601                  |
 
 **Response 201** — created meal object
 
@@ -139,8 +139,10 @@ Requires authentication.
 **Response 200**
 ```json
 {
-  "total": 120,
-  "by_type": {
+  "total_meals": 120,
+  "today_uploads": 3,
+  "this_week_uploads": 18,
+  "breakdown": {
     "breakfast": 30,
     "lunch": 40,
     "dinner": 35,
@@ -158,9 +160,15 @@ Cached for 10 minutes.
 **Response 200**
 ```json
 {
-  "credits": { "usage": 1.2, "limit": 25 },
-  "storage": { "usage": 512000000, "limit": 25000000000 },
-  "requests": { "usage": 3200, "limit": 500000 },
-  "bandwidth": { "usage": 1024000, "limit": 25000000000 }
+  "credits_used": 1.2,
+  "credits_limit": 25,
+  "storage_used_gb": 0.512,
+  "bandwidth_used_gb": 1.024,
+  "transformations_used": 3200
 }
+```
+
+**Response 503** — returned if the Cloudinary API call fails (e.g. quota exceeded or network error):
+```json
+{ "error": "Failed to fetch Cloudinary usage" }
 ```
