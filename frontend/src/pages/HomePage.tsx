@@ -18,9 +18,9 @@ interface HomePageProps {
     uploadOpen: boolean;
     setUploadOpen: (open: boolean) => void;
     refreshKey: number;
-  }
+}
 
-  export default function HomePage({ setUploadOpen: _setUploadOpen, refreshKey }: HomePageProps) {
+export default function HomePage({ setUploadOpen: _setUploadOpen, refreshKey }: HomePageProps) {
     const [mealType, setMealType] = useState(0);
     const [year, setYear] = useState<number | undefined>();
     const [month, setMonth] = useState<number | undefined>();
@@ -32,10 +32,10 @@ interface HomePageProps {
         month,
     };
 
-    const { meals, loading, initialLoading, hasMore, loadMore, refresh, error } = useMeals(filters);
+    const { meals, loading, initialLoading, hasMore, loadMore, refresh, errorType } = useMeals(filters);
 
     useEffect(() => {
-      if (refreshKey > 0) refresh();
+        if (refreshKey > 0) refresh();
     }, [refreshKey]);
 
     const { filters: availableFilters } = useAvailableFilters();
@@ -57,24 +57,23 @@ interface HomePageProps {
 
     const handleMealClick = useCallback((meal: Meal) => {
         setSelectedMeal(meal);
-      }, []);
-
+    }, []);
 
     const [showColdStart, setShowColdStart] = useState(false);
     const coldStartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-    if (initialLoading) {
-        coldStartTimer.current = setTimeout(() => setShowColdStart(true), 3000);
-    } else {
-        if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
-        setShowColdStart(false);
-    }
-    return () => {
-        if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
-    };
-    }, [initialLoading]);
-      
+        if (initialLoading && errorType === 'none') {
+            coldStartTimer.current = setTimeout(() => setShowColdStart(true), 12000);
+        } else {
+            if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
+            setShowColdStart(false);
+        }
+        return () => {
+            if (coldStartTimer.current) clearTimeout(coldStartTimer.current);
+        };
+    }, [initialLoading, errorType]);
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-6">
             {/* Filter 區塊 */}
@@ -82,56 +81,61 @@ interface HomePageProps {
 
                 {/* 餐別 Chips */}
                 <div className="flex flex-wrap gap-1.5">
-                {MEAL_TYPES.map(t => (
-                    <button
-                    key={t.value}
-                    onClick={() => setMealType(t.value)}
-                    className={[
-                        'px-3 py-1 text-sm rounded-full border transition-colors',
-                        mealType === t.value
-                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                        : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]',
-                    ].join(' ')}
-                    >
-                    {t.label}
-                    </button>
-                ))}
+                    {MEAL_TYPES.map(t => (
+                        <button
+                            key={t.value}
+                            onClick={() => setMealType(t.value)}
+                            className={[
+                                'px-3 py-1 text-sm rounded-full border transition-colors',
+                                mealType === t.value
+                                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                                    : 'bg-transparent text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]',
+                            ].join(' ')}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* 年份下拉 — 多於一個年份才顯示 */}
                 {availableFilters.years.length > 1 && (
-                <select
-                    value={year ?? ''}
-                    onChange={e => handleYearChange(e.target.value)}
-                    className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                >
-                    <option value="">All Years</option>
-                    {availableFilters.years.map(y => (
-                    <option key={y.year} value={y.year}>{y.year}</option>
-                    ))}
-                </select>
+                    <select
+                        value={year ?? ''}
+                        onChange={e => handleYearChange(e.target.value)}
+                        className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                    >
+                        <option value="">All Years</option>
+                        {availableFilters.years.map(y => (
+                            <option key={y.year} value={y.year}>{y.year}</option>
+                        ))}
+                    </select>
                 )}
 
                 {/* 月份下拉 — 選了年份且多於一個月份才顯示 */}
                 {year && availableMonths.length > 1 && (
-                <select
-                    value={month ?? ''}
-                    onChange={e => handleMonthChange(e.target.value)}
-                    className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-                >
-                    <option value="">All Months</option>
-                    {availableMonths.map(m => (
-                    <option key={m} value={m}>
-                        {new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}
-                    </option>
-                    ))}
-                </select>
+                    <select
+                        value={month ?? ''}
+                        onChange={e => handleMonthChange(e.target.value)}
+                        className="text-sm px-3 py-1 rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                    >
+                        <option value="">All Months</option>
+                        {availableMonths.map(m => (
+                            <option key={m} value={m}>
+                                {new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}
+                            </option>
+                        ))}
+                    </select>
                 )}
             </div>
 
             {/* 照片網格 */}
-            {showColdStart || error ? (
-            <ColdStartNotice />
+            {errorType !== 'none' ? (
+                <ColdStartNotice
+                    variant={errorType === 'database_unavailable' ? 'unavailable' : 'waking'}
+                    onRetry={refresh}
+                />
+            ) : showColdStart ? (
+                <ColdStartNotice />
             ) : (
                 <MealGrid
                     meals={meals}
@@ -150,7 +154,5 @@ interface HomePageProps {
                 onUpdated={refresh}
             />
         </div>
-
-
     );
 }

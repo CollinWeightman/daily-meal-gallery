@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import client from '@/api/client';
 import type { Meal, MealListResponse, MealFilters } from '@/types/meal';
+
+type ErrorType = 'none' | 'unknown' | 'database_unavailable';
 
 export function useMeals(filters: MealFilters) {
     const [meals, setMeals] = useState<Meal[]>([]);
@@ -8,7 +11,7 @@ export function useMeals(filters: MealFilters) {
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [error, setError] = useState(false);
+    const [errorType, setErrorType] = useState<ErrorType>('none');
     const [refreshKey, setRefreshKey] = useState(0);
     const filtersRef = useRef(filters);
 
@@ -18,10 +21,11 @@ export function useMeals(filters: MealFilters) {
         setPage(1);
         setHasMore(true);
         setInitialLoading(true);
-        setError(false);
+        setErrorType('none');
     }, [filters.meal_type, filters.year, filters.month]);
 
     const fetchPage = useCallback(async (pageNum: number) => {
+        
         setLoading(true);
         try {
             const params: Record<string, string | number> = { page: pageNum, per_page: 20 };
@@ -35,9 +39,18 @@ export function useMeals(filters: MealFilters) {
 
             setMeals(prev => pageNum === 1 ? data : [...prev, ...data]);
             setHasMore(meta.current_page < meta.last_page);
-        } catch {
+            setErrorType('none');
+        } catch (err) {
             setHasMore(false);
-            setError(true);
+            if (
+                axios.isAxiosError(err) &&
+                err.response?.status === 503 &&
+                err.response?.data?.error === 'database_unavailable'
+            ) {
+                setErrorType('database_unavailable');
+            } else {
+                setErrorType('unknown');
+            }
         } finally {
             setLoading(false);
             setInitialLoading(false);
@@ -57,9 +70,9 @@ export function useMeals(filters: MealFilters) {
         setPage(1);
         setHasMore(true);
         setInitialLoading(true);
-        setError(false);
+        setErrorType('none');
         setRefreshKey(k => k + 1);
     }, []);
 
-    return { meals, loading, initialLoading, hasMore, loadMore, refresh, error };
+    return { meals, loading, initialLoading, hasMore, loadMore, refresh, errorType };
 }

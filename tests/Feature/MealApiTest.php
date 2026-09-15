@@ -160,3 +160,37 @@ test('can delete a meal with multiple photos', function () {
     $this->assertDatabaseMissing('meals', ['id' => $meal->id]);
     $this->assertDatabaseMissing('meal_photos', ['meal_id' => $meal->id]);
 });
+
+test('accepts jpeg, png, and webp formats', function (string $extension) {
+    $user = User::factory()->create();
+    $this->mock(\App\Services\CloudinaryService::class)
+        ->shouldReceive('upload')
+        ->once()
+        ->andReturn('daily-meals/test_mime')
+        ->shouldReceive('getUrl')
+        ->andReturn('https://res.cloudinary.com/fake/image/upload/daily-meals/test_mime')
+        ->shouldReceive('getThumbnailUrl')
+        ->andReturn('https://res.cloudinary.com/fake/image/upload/c_fill,h_300,w_300/daily-meals/test_mime');
+
+    $photo = \Illuminate\Http\UploadedFile::fake()->image("test.$extension");
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/meals', [
+        'photos' => [$photo],
+        'meal_type' => 1,
+    ]);
+
+    $response->assertStatus(201);
+})->with(['jpeg', 'png', 'webp']);
+
+test('rejects non-allowed image formats', function () {
+    $user = User::factory()->create();
+    $gif = \Illuminate\Http\UploadedFile::fake()->image('test.gif');
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/meals', [
+        'photos' => [$gif],
+        'meal_type' => 1,
+    ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['photos.0']);
+});

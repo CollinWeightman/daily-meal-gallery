@@ -14,6 +14,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from '@/contexts/SnackbarContext';
 import client from '@/api/client';
@@ -43,6 +44,7 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [fullscreen, setFullscreen] = useState(false);
 
     const [editMealType, setEditMealType] = useState(meal?.meal_type ?? 1);
     const [editRemark, setEditRemark] = useState(meal?.remark ?? '');
@@ -53,7 +55,8 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     useEffect(() => {
         setEditing(false);
         setConfirmDelete(false);
-        setCurrentIndex(0); // 切換 meal 時重置到第一張
+        setFullscreen(false);
+        setCurrentIndex(0);
         setEditMealType(meal?.meal_type ?? 1);
         setEditRemark(meal?.remark ?? '');
         setEditTakenAt(meal?.taken_at ? meal.taken_at.slice(0, 16) : '');
@@ -63,6 +66,14 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
     useEffect(() => {
         if (!meal) return;
         const handleKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            const isEditableTarget =
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.isContentEditable;
+
+            if (isEditableTarget) return;
+
             if (e.key === 'ArrowLeft') prevPhoto();
             if (e.key === 'ArrowRight') nextPhoto();
         };
@@ -164,12 +175,12 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                             <img
                                 src={currentPhoto.url}
                                 alt={meal.meal_type_label}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-contain cursor-zoom-in"
                                 style={{ maxHeight: '80vh' }}
+                                onClick={() => setFullscreen(true)}
                             />
                         )}
 
-                        {/* 左右箭頭：多張才顯示 */}
                         {hasMultiple && (
                             <>
                                 <button
@@ -185,7 +196,6 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                                     <ChevronRight size={22} />
                                 </button>
 
-                                {/* 第幾張指示點 */}
                                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                                     {photos.map((_, i) => (
                                         <button
@@ -202,7 +212,7 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                         )}
                     </div>
 
-                    {/* 資訊區 */}
+                    {/* 資訊區（未變動） */}
                     <div
                         className="w-full md:w-[35%] p-5 flex flex-col gap-4 border-t border-[var(--border)] md:border-t-0 md:border-l overflow-y-auto"
                         style={{ maxHeight: '80vh' }}
@@ -275,7 +285,6 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                                     {meal.meal_type_label}
                                 </span>
 
-                                {/* 多張時顯示第幾張 */}
                                 {hasMultiple && (
                                     <p className="text-xs text-[var(--text-muted)]">
                                         Photo {currentIndex + 1} of {photos.length}
@@ -311,6 +320,79 @@ export function MealLightbox({ meal, onClose, onDeleted, onUpdated }: MealLightb
                             </>
                         )}
                     </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* 全螢幕縮放檢視 */}
+        <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+            <DialogContent
+                aria-describedby={undefined}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                className="p-0 overflow-hidden bg-black border-none rounded-none w-screen h-screen max-w-none sm:max-w-none [&>button]:z-30 [&>button]:text-white [&>button]:p-3 [&>button]:rounded-full [&>button]:bg-black/40 [&>button_svg]:size-5"
+            >
+                <DialogTitle className="sr-only">{meal.meal_type_label}</DialogTitle>
+
+                <div
+                    className="relative w-full h-full flex items-center justify-center"
+                    style={{ touchAction: 'none' }}
+                >
+                    {currentPhoto && (
+                        <TransformWrapper
+                            key={currentPhoto.id}
+                            initialScale={1}
+                            minScale={1}
+                            maxScale={4}
+                            centerOnInit
+                            doubleClick={{ mode: 'toggle' }}
+                        >
+                            <TransformComponent
+                                wrapperStyle={{ width: '100%', height: '100%' }}
+                                contentStyle={{
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <img
+                                    src={currentPhoto.url}
+                                    alt={meal.meal_type_label}
+                                    className="max-w-full max-h-full object-contain select-none"
+                                />
+                            </TransformComponent>
+                        </TransformWrapper>
+                    )}
+
+                    {hasMultiple && (
+                        <>
+                            <button
+                                onClick={prevPhoto}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
+                            <button
+                                onClick={nextPhoto}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                                {photos.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentIndex(i)}
+                                        className={[
+                                            'w-1.5 h-1.5 rounded-full transition-colors',
+                                            i === currentIndex ? 'bg-white' : 'bg-white/40',
+                                        ].join(' ')}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>
