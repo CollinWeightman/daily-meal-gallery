@@ -13,11 +13,13 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor — 401 自動登出並導向 /login
+// Response interceptor — 已登入狀態下的 401(工作階段過期)才自動登出並導向 /login
+// 登入請求本身的 401 代表帳密錯誤,交給 LoginPage 顯示錯誤訊息
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.endsWith('/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('auth_token');
       window.location.href = '/login';
     }
