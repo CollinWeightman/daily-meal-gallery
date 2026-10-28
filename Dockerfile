@@ -1,4 +1,7 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4.27-fpm-alpine
+
+# 版本檢查:基底被改回舊版時,建置直接失敗(CVE-2026-109618/109619 修正版為 8.4.27)
+RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", ">=") ? 0 : 1);' && php -v
 
 # 安裝系統依賴
 RUN apk add --no-cache \
@@ -15,7 +18,7 @@ RUN apk add --no-cache \
 RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
 
 # 安裝 Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # 設定工作目錄
 WORKDIR /var/www
